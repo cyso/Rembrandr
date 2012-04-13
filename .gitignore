@@ -1,3 +1,5 @@
+*~
+
 # Configs
 config/*.php
 
@@ -6,4 +8,4 @@ logs/*
 !logs/.empty
 
 # Database files
-db/*.db
+db/*.sqlite3
