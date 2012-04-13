@@ -1,0 +1,7 @@
+<?php
+class DatabaseConfig {
+	const DSN = "";
+	const USERNAME = "";
+	const PASSWORD = "";
+}
+?>
