@@ -1,3 +1,9 @@
+# Configs
+config/*.php
+
+# Logs
 logs/*
 !logs/.empty
+
+# Database files
 db/*.db

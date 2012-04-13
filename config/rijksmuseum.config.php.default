@@ -1,0 +1,23 @@
+<?php
+class RijksmuseumConfig {
+	// Your API key
+	const API_KEY = "";
+	// Full URL without trailing slash
+	const API_BASE = "http://www.rijksmuseum.nl/api/oai";
+
+	const LIST_VERB = "ListRecords";
+	const GET_VERB = "GetRecord";
+
+	public function getListUrl($resume = null) {
+		if ($resume) {
+			return sprintf("%s/%s/?verb=%s&set=collectie_online&metadataPrefix=oai_dc&resumptiontoken=%s", RijksmuseumConfig::API_BASE, RijksmuseumConfig::API_KEY, RijksmuseumConfig::LIST_VERB, $resume);
+		} else {
+			return sprintf("%s/%s/?verb=%s&set=collectie_online&metadataPrefix=oai_dc", RijksmuseumConfig::API_BASE, RijksmuseumConfig::API_KEY, RijksmuseumConfig::LIST_VERB);
+		}
+	}
+
+	public function getUrl($identifier) {
+		return sprintf("%s/%s/?verb=%s&set=collectie_online&identifier=%s", RijksmuseumConfig::API_BASE, RijksmuseumConfig::API_KEY, RijksmuseumConfig::GET_VERB, $identifier);
+	}
+}
+?>
