@@ -108,12 +108,11 @@ while (true) {
 
 	$token = $xml->xpath("/o:OAI-PMH/o:ListRecords/o:resumptionToken");
 	if (count($token) == 0) {
-		printf("Response contained no token, we're done");
+		printf("Response contained no token, we're done\n");
 		break;
 	}
 	$resume = (string)$token[0];
 	$round += 1;
-	break;
 }
 
 $inserted = array_unique($inserted);
