@@ -19,16 +19,34 @@ function Zextract($bullshit, $filter = "") {
 	return array_unique($out);
 }
 
+function Zfilter($bullshit, $split = ":", $filter = "/(.*)/") {
+	$shit = explode($split, $bullshit);
+	$out = array();
+	foreach ($shit as $s) {
+		if (preg_match($filter, $s, $matches)) {
+			$out[] = trim($matches[1]);
+		} else {
+			$out[] = trim($s);
+		}
+	}
+	//printf("%s -> %s\n", $bullshit, implode(",", $out));
+	return $out;
+}
+
 function process_record($record, $database) {
 	$shorthand = $record->metadata->children("http://www.openarchives.org/OAI/2.0/oai_dc/")->dc->children("http://purl.org/dc/elements/1.1/");
 	$id = (string) trim($record->header->identifier[0]);
 	$_id = $id;
 	$image = (string) trim($shorthand->format[0]);
 	$language = (string) trim($shorthand->language[0]);
-	$license = (string) trim($shorthand->rights[0]);
+	$license = Zfilter($shorthand->rights[0], "se:");
+	$license = trim($license[1]);
 	$title = (string) trim($shorthand->title[0]);
 	$description = (string) $shorthand->description[0];
-	$date = (string) $shorthand->date[0];
+	$date = Zfilter($shorthand->date[0], "- ", "/([-]?\d+)/");
+	if (count($date) == 1 && empty($date[0])) {
+		$date = null;
+	}
 	$formats = Zextract($shorthand->format, ": ");
 	$coverage = Zextract($shorthand->coverage);
 	$type = Zextract($shorthand->type);
@@ -78,7 +96,7 @@ while (true) {
 	foreach ($records as $record) {
 		$record = process_record($record, $database);
 		try {
-			printf("Saving %s\n", $record['title']);
+			printf("Saving %s - %s (%s)\n", $record['id'], $record['title'], implode(",", empty($record['date'])?array():$record['date']));
 			$objects->save($record);
 		} catch (MongoException $mo) {
 			printf("Failed to insert object");
