@@ -1,4 +1,5 @@
 *~
+*.o
 
 # Configs
 config/*.php
@@ -9,3 +10,6 @@ logs/*
 
 # Database files
 db/*.sqlite3
+
+# process tool
+vendors/process
