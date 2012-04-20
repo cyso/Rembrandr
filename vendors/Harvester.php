@@ -1,6 +1,5 @@
 <?php
 
-require_once(dirname(__FILE__) . "/../config/database.config.php");
 require_once(dirname(__FILE__) . "/../config/rijksmuseum.config.php");
 require_once("HttpRequest.php");
 
@@ -17,30 +16,38 @@ function Zextract($bullshit, $filter = "") {
 			$out[] = (string) $shit;
 		}
 	}
-	return $out;
+	return array_unique($out);
 }
 
 function process_record($record, $database) {
 	$shorthand = $record->metadata->children("http://www.openarchives.org/OAI/2.0/oai_dc/")->dc->children("http://purl.org/dc/elements/1.1/");
 	$id = (string) trim($record->header->identifier[0]);
+	$_id = $id;
 	$image = (string) trim($shorthand->format[0]);
 	$language = (string) trim($shorthand->language[0]);
 	$license = (string) trim($shorthand->rights[0]);
 	$title = (string) trim($shorthand->title[0]);
 	$description = (string) $shorthand->description[0];
+	$date = (string) $shorthand->date[0];
 	$formats = Zextract($shorthand->format, ": ");
-	$coverage = implode(", ", Zextract($shorthand->coverage));
-	$type = implode(", ", Zextract($shorthand->type));
+	$coverage = Zextract($shorthand->coverage);
+	$type = Zextract($shorthand->type);
 
-	return compact("id", "image", "language", "license", "title", "description", "formats", "coverage", "type");
+	return compact("_id", "id", "image", "language", "license", "title", "description", "date", "formats", "coverage", "type");
 }
 
 // Connect to the database!
 try {
-	$database = new PDO(DatabaseConfig::DSN, DatabaseConfig::USERNAME, DatabaseConfig::PASSWORD);
-} catch (PDOException $e) {
+	$mongo = new Mongo();
+	$database = $mongo->selectDB("rembrandt");
+	$objects = $database->selectCollection("objects");
+} catch (MongoConnnectionException $e) {
 	printf("Failed to connect to database:\n");
 	printf("%s\n", $e);
+	die(1);
+} catch (InvalidArgumentException $iae) {
+	printf("Invalid database name:\n");
+	printf("%s\n", $iae);
 	die(1);
 }
 
@@ -69,7 +76,14 @@ while (true) {
 	}
 
 	foreach ($records as $record) {
-		var_dump(process_record($record, $database));
+		$record = process_record($record, $database);
+		try {
+			printf("Saving %s\n", $record['title']);
+			$objects->save($record);
+		} catch (MongoException $mo) {
+			printf("Failed to insert object");
+			die(3);
+		}
 	}
 
 	$token = $xml->xpath("/o:OAI-PMH/o:ListRecords/o:resumptionToken");
