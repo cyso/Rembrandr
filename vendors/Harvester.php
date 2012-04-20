@@ -43,7 +43,7 @@ function process_record($record, $database) {
 	$license = trim($license[1]);
 	$title = (string) trim($shorthand->title[0]);
 	$description = (string) $shorthand->description[0];
-	$date = Zfilter($shorthand->date[0], "- ", "/([-]?\d+)/");
+	$date = Zfilter($shorthand->date[0], "- ", "/([-\d]+)/");
 	if (count($date) == 1 && empty($date[0])) {
 		$date = null;
 	}
@@ -73,6 +73,7 @@ try {
 
 $round = 1;
 $resume = null;
+$inserted = array();
 while (true) {
 	printf("Round %d; Fetching from: %s\n", $round, RijksmuseumConfig::getListUrl($resume));
 	$request = new HttpRequest("get", RijksmuseumConfig::getListUrl($resume));
@@ -90,7 +91,7 @@ while (true) {
 
 	if (count($records) == 0) {
 		printf("Response contained no content, we're done");
-		die(0);
+		break;
 	}
 
 	foreach ($records as $record) {
@@ -98,19 +99,38 @@ while (true) {
 		try {
 			printf("Saving %s - %s (%s)\n", $record['id'], $record['title'], implode(",", empty($record['date'])?array():$record['date']));
 			$objects->save($record);
+			$inserted[] = $record['id'];
 		} catch (MongoException $mo) {
-			printf("Failed to insert object");
+			printf("Failed to insert object: %s", $mo);
 			die(3);
 		}
 	}
 
 	$token = $xml->xpath("/o:OAI-PMH/o:ListRecords/o:resumptionToken");
 	if (count($token) == 0) {
+		printf("Response contained no token, we're done");
 		break;
 	}
 	$resume = (string)$token[0];
 	$round += 1;
+	break;
 }
+
+$inserted = array_unique($inserted);
+sort($inserted);
+$present = $database->command(array("distinct" => "objects", "key" => "_id"));
+sort($present['values']);
+
+$deleted = array_diff($inserted, $present['values']);
+
+printf("Found %d entries which have been deleted from the API\n", count($deleted));
+try {
+	$objects->remove(array("_id" => array('$in' => $deleted)));
+} catch (MongoException $mo) {
+	printf("Failed to delete objects: %s\n", $mo);
+	die(4);
+}
+printf("Deleted!\n");
 
 // Done!
 
