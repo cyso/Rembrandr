@@ -117,10 +117,13 @@ while (true) {
 
 $inserted = array_unique($inserted);
 sort($inserted);
-$present = $database->command(array("distinct" => "objects", "key" => "_id"));
-sort($present['values']);
+$present = array();
+foreach ($this->collection->find(array(), array()) as $value) {
+	$present[] = $value['_id'];
+}
+sort($present);
 
-$deleted = array_diff($inserted, $present['values']);
+$deleted = array_diff($inserted, $present);
 
 printf("Found %d entries which have been deleted from the API\n", count($deleted));
 try {

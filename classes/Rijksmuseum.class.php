@@ -47,6 +47,15 @@ class Rijksmuseum {
 			trigger_error("Call to non-existant function", E_USER_ERROR);
 		}
 	}
+
+	// Specific performance overrides follow
+	public function allId() {
+		$out = array();
+		foreach ($this->collection->find(array(), array()) as $value) {
+			$out[] = $value['_id'];
+		}
+		return $out;
+	}
 }
 
 ?>
